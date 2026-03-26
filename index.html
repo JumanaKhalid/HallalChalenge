@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة حلّال الاحترافية</title>
+    
+    <!-- مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- مكتبات React الأساسية للتشغيل المباشر -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- مترجم Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- أيقونات FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-color: #f8fafc; 
+            margin: 0; 
+            color: #1e293b;
+        }
+        
+        .font-tajawal { font-family: 'Tajawal', sans-serif; }
+        
+        .glass { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at top right, #1e1b4b, #312e81, #1e1b4b);
+        }
+
+        @keyframes float { 
+            0%, 100% { transform: translateY(0px); } 
+            50% { transform: translateY(-10px); } 
+        }
+        .float-animation { animation: float 4s ease-in-out infinite; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+
+        /* ستايل الطباعة */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .print-card { border: 2px solid #e2e8f0 !important; box-shadow: none !important; break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // قاعدة بيانات التحديات الكاملة
+        const weeksData = [
+            {
+                id: 1, title: "المرحلة الأولى: الانطلاقة", password: "1",
+                challenges: [
+                    { id: "w1c1", title: "تحدي السفر والرحلات", category: "السفر", icon: "fa-plane", description: "أنت في مطار دولي، حقيبتك زائدة 2 كجم والوقت ضيق جداً قبل إغلاق البوابة. لا تملك ميزانية للوزن الزائد. كيف تتصرف؟", hints: ["ارتداء الملابس الثقيلة يوفر وزناً.", "نقل الأوزان الثقيلة لحقيبة اليد."] },
+                    { id: "w1c2", title: "تحدي ميزانية الطعام", category: "مالية", icon: "fa-utensils", description: "انتهت ميزانية الطعام قبل أسبوع من الراتب. لديك مبلغ وجبة واحدة فقط. كيف ستأكل لمدة 7 أيام؟", hints: ["شراء بقوليات وبيض بكميات.", "البحث عن عروض السوبر ماركت."] }
+                ]
+            },
+            {
+                id: 2, title: "المرحلة الثانية: التطوير", password: "2",
+                challenges: [
+                    { id: "w2c1", title: "تحدي الأندية الرياضية", category: "صحة", icon: "fa-dumbbell", description: "تعمل 10 ساعات جالساً ووزنك زاد. لا وقت للنادي. صمم روتيناً حركياً داخل يومك المزدحم.", hints: ["استخدام الدرج بدل المصعد.", "تمارين الإطالة أثناء العمل."] }
+                ]
+            },
+            {
+                id: 3, title: "المرحلة الثالثة: الإتقان", password: "3",
+                challenges: [
+                    { id: "w3c1", title: "تحدي الخطابة والجمهور", category: "تواصل", icon: "fa-microphone", description: "انقطع التيار الكهربائي أثناء عرضك أمام مستثمرين. لديك 15 دقيقة لإقناعهم بدون شاشة. ماذا ستفعل؟", hints: ["استخدام لغة الجسد القصصية.", "الاقتراب من الجمهور وتغيير نبرة الصوت."] }
+                ]
+            },
+            {
+                id: 4, title: "المرحلة الرابعة: العبقرية", password: "4",
+                challenges: [
+                    { id: "w4c1", title: "تحدي إدارة الأزمات", category: "قيادة", icon: "fa-bullseye", description: "تعطل القرص الصلب قبل تسليم مشروع التخرج بيوم وتلفت الملفات. الفريق محبط. ما هي خطتك للطوارئ؟", hints: ["التركيز على الحد الأدنى المطلوب.", "التواصل الشفاف مع المشرف لطلب وقت."] }
+                ]
+            }
+        ];
+
+        function App() {
+            const [view, setView] = useState('home'); 
+            const [unlockedWeeks, setUnlockedWeeks] = useState([1]);
+            const [activeWeek, setActiveWeek] = useState(null);
+            const [activeChallenge, setActiveChallenge] = useState(null);
+            const [submissions, setSubmissions] = useState([]);
+
+            const handleUnlock = (id, pass) => {
+                const week = weeksData.find(w => w.id === id);
+                if (week && week.password === pass) {
+                    setUnlockedWeeks([...unlockedWeeks, id]);
+                } else {
+                    alert("رمز الدخول غير صحيح (جرب 1، 2، 3 أو 4)");
+                }
+            };
+
+            const submitSolution = (data) => {
+                setSubmissions([data, ...submissions]);
+                setView('report');
+            };
+
+            return (
+                <div className="min-h-screen pb-20">
+                    {/* Header */}
+                    <header className="hero-gradient text-white pt-16 pb-32 px-6 text-center shadow-2xl no-print">
+                        <div className="max-w-4xl mx-auto">
+                            <i className="fas fa-brain text-amber-400 text-7xl mb-6 float-animation block"></i>
+                            <h1 className="text-6xl font-black mb-4 tracking-tighter">مَنصة حَلّال</h1>
+                            <p className="text-2xl font-tajawal opacity-80">أهلاً بك في معمل تطوير الذكاء الإجرائي</p>
+                        </div>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto px-6 -mt-20 relative z-10">
+                        {view === 'home' && <HomeView weeks={weeksData} unlocked={unlockedWeeks} onUnlock={handleUnlock} onSelect={(w) => {setActiveWeek(w); setView('week');}} goReport={() => setView('report')} />}
+                        {view === 'week' && <WeekView week={activeWeek} onBack={() => setView('home')} onStart={(c) => {setActiveChallenge(c); setView('challenge');}} />}
+                        {view === 'challenge' && <ChallengeView challenge={activeChallenge} onBack={() => setView('week')} onSubmit={submitSolution} />}
+                        {view === 'report' && <ReportView submissions={submissions} onBack={() => setView('home')} />}
+                    </main>
+                </div>
+            );
+        }
+
+        function HomeView({ weeks, unlocked, onUnlock, onSelect, goReport }) {
+            const [passInput, setPassInput] = useState({});
+            return (
+                <div className="space-y-10 animate-fade">
+                    <div className="flex justify-end mb-4">
+                        <button onClick={goReport} className="bg-amber-400 text-indigo-950 px-8 py-3 rounded-2xl font-bold shadow-lg hover:scale-105 transition-all">
+                            <i className="fas fa-trophy ml-2"></i> سجل الإنجازات
+                        </button>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {weeks.map(w => {
+                            const isUnlocked = unlocked.includes(w.id);
+                            return (
+                                <div key={w.id} className="glass p-10 rounded-[3rem] shadow-xl border border-white">
+                                    <div className="flex justify-between items-start mb-8">
+                                        <div>
+                                            <span className="text-indigo-600 font-bold uppercase tracking-widest text-sm">المرحلة {w.id}</span>
+                                            <h2 className="text-4xl font-black mt-1">{w.title.split(":")[1]}</h2>
+                                        </div>
+                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl ${isUnlocked ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                                            <i className={`fas ${isUnlocked ? 'fa-unlock' : 'fa-lock'}`}></i>
+                                        </div>
+                                    </div>
+                                    {isUnlocked ? (
+                                        <button onClick={() => onSelect(w)} className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 transition-all">دخول المرحلة</button>
+                                    ) : (
+                                        <div className="flex gap-3">
+                                            <input 
+                                                type="password" 
+                                                placeholder="رمز الفتح..." 
+                                                className="flex-1 p-4 rounded-xl border bg-slate-50 outline-none focus:border-indigo-500"
+                                                value={passInput[w.id] || ''}
+                                                onChange={e => setPassInput({...passInput, [w.id]: e.target.value})}
+                                            />
+                                            <button onClick={() => onUnlock(w.id, passInput[w.id])} className="bg-slate-900 text-white px-6 rounded-xl font-bold">فتح</button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function WeekView({ week, onBack, onStart }) {
+            return (
+                <div className="animate-fade">
+                    <button onClick={onBack} className="mb-8 text-indigo-700 font-bold text-xl"><i className="fas fa-arrow-right ml-2"></i> عودة للمراحل</button>
+                    <h2 className="text-5xl font-black mb-12 text-slate-900">{week.title}</h2>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {week.challenges.map(c => (
+                            <div key={c.id} className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-slate-100 hover:shadow-2xl transition-all group">
+                                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
+                                    <i className={`fas ${c.icon}`}></i>
+                                </div>
+                                <h3 className="text-2xl font-black mb-4">{c.title}</h3>
+                                <button onClick={() => onStart(c)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-indigo-600 transition-colors">بدء التحدي</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function ChallengeView({ challenge, onBack, onSubmit }) {
+            const [timer, setTimer] = useState(15 * 60);
+            const [answer, setAnswer] = useState('');
+            const [name, setName] = useState('');
+            const [hintsUsed, setHintsUsed] = useState(0);
+
+            useEffect(() => {
+                const clock = setInterval(() => setTimer(t => t > 0 ? t - 1 : 0), 1000);
+                return () => clearInterval(clock);
+            }, []);
+
+            const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, '0')}`;
+
+            const handleSend = () => {
+                if (!name || answer.length < 20) return alert("يرجى إدخال اسمك وحل مفصل (20 كلمة على الأقل)");
+                
+                // حساب درجة وهمية بناء على الطول والوقت
+                const score = Math.min(100, Math.floor((answer.length / 100) * 50) + Math.floor((timer / 900) * 50) - (hintsUsed * 10));
+                
+                onSubmit({
+                    name,
+                    challenge: challenge.title,
+                    score,
+                    answer,
+                    time: formatTime(900 - timer)
+                });
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto bg-white p-10 md:p-16 rounded-[4rem] shadow-2xl animate-fade">
+                    <div className="flex justify-between items-center mb-10">
+                        <h2 className="text-4xl font-black">{challenge.title}</h2>
+                        <div className={`text-4xl font-mono font-bold px-8 py-4 rounded-3xl ${timer < 300 ? 'bg-rose-100 text-rose-600 animate-pulse' : 'bg-slate-900 text-white'}`}>
+                            {formatTime(timer)}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-indigo-50 p-8 rounded-3xl mb-10 border-r-8 border-indigo-600 text-xl leading-relaxed italic">
+                        "{challenge.description}"
+                    </div>
+
+                    <div className="space-y-8">
+                        <div>
+                            <label className="block font-black mb-2 text-slate-500">اسم "الحلّال":</label>
+                            <input className="w-full p-5 rounded-2xl border-2 bg-slate-50 focus:border-indigo-500 outline-none text-xl font-bold" value={name} onChange={e => setName(e.target.value)} placeholder="أدخل اسمك الكامل..." />
+                        </div>
+                        <div>
+                            <label className="block font-black mb-2 text-slate-500">خطة الحل الإجرائية:</label>
+                            <textarea className="w-full h-64 p-6 rounded-3xl border-2 bg-slate-50 focus:border-indigo-500 outline-none text-lg leading-relaxed" value={answer} onChange={e => setAnswer(e.target.value)} placeholder="كيف ستحل هذا المأزق؟ اشرح خطواتك..." />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => { setHintsUsed(h => h + 1); setTimer(t => Math.max(0, t - 300)); }}
+                                disabled={hintsUsed >= 2 || timer < 300}
+                                className="px-8 py-5 rounded-2xl border-2 border-amber-200 text-amber-600 font-bold hover:bg-amber-50 disabled:opacity-30"
+                            >
+                                طلب تلميح (-5 دقائق)
+                            </button>
+                            <button onClick={handleSend} className="flex-1 bg-indigo-600 text-white rounded-2xl font-black text-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all">إرسال الحل للتقييم</button>
+                        </div>
+
+                        {hintsUsed > 0 && (
+                            <div className="mt-6 space-y-3">
+                                {[...Array(hintsUsed)].map((_, i) => (
+                                    <div key={i} className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-800 font-bold">
+                                        💡 {challenge.hints[i]}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function ReportView({ submissions, onBack }) {
+            return (
+                <div className="animate-fade pb-20">
+                    <div className="flex justify-between items-center mb-10 no-print">
+                        <button onClick={onBack} className="text-indigo-700 font-bold text-xl"><i className="fas fa-arrow-right ml-2"></i> العودة للرئيسية</button>
+                        <button onClick={() => window.print()} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold"><i className="fas fa-print ml-2"></i> طباعة التقرير</button>
+                    </div>
+
+                    <h2 className="text-5xl font-black mb-12 text-center">سجل الإنجازات والشارات</h2>
+
+                    {submissions.length === 0 ? (
+                        <div className="text-center p-20 bg-white rounded-[3rem] shadow-xl border-4 border-dashed border-slate-100">
+                            <i className="fas fa-medal text-8xl text-slate-100 mb-6 block"></i>
+                            <p className="text-2xl text-slate-400 font-bold">لم تنجز أي تحديات بعد، ابدأ الآن!</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-8">
+                            {submissions.map((s, i) => (
+                                <div key={i} className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-50 print-card flex flex-col md:flex-row justify-between items-center gap-8">
+                                    <div>
+                                        <div className="text-indigo-600 font-black mb-2 uppercase tracking-widest text-sm">إنجاز جديد لـ {s.name}</div>
+                                        <h3 className="text-4xl font-black mb-4">{s.challenge}</h3>
+                                        <div className="flex gap-4">
+                                            <span className="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-lg font-bold">الزمن: {s.time}</span>
+                                            <span className="bg-amber-100 text-amber-700 px-4 py-1 rounded-lg font-bold">شارة: حلّال معتمد</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-6xl font-black text-indigo-600">%{s.score}</div>
+                                        <div className="text-sm font-bold text-slate-400 mt-1 uppercase">درجة الذكاء الإجرائي</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
